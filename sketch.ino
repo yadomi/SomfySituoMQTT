@@ -27,9 +27,22 @@ PubSubClient MQTTClient(ESPClient);
 /**
  * This assume the remote is on the first channel when powered-on
  * It can be a problematic since the remote memorize the last channel.
- * Idealy, this should be stored in the EEPROM
+ * Idealy, this should be stored in the EEPROM/SPIFFS then read at boot
  */
-int currentChannel = 1; 
+int currentChannel = 1;
+
+unsigned long startTime;
+unsigned long endTime;
+unsigned long elapsed;
+byte timerRunning = 0;
+
+void timerReset () {
+  startTime = millis();
+}
+
+unsigned long getElapsedTime () {
+  return millis() - startTime;
+}
 
 void SomfyPress(SomfyButton button, int pressTime = 100) {
   Serial.print("SomfyPress: ");
@@ -38,27 +51,37 @@ void SomfyPress(SomfyButton button, int pressTime = 100) {
   digitalWrite(button, LOW);
   delay(pressTime);
   digitalWrite(button, HIGH);
+
+  timerReset();
   delay(pressTime);
 }
 
 void SomfySelectChannel(int channel) {
   /**
-   * When the remote is asleep, pressing the channel button only shows the current channel
+   * When the remote is asleep, pressing the channel button only shows the current channel on the LEDs indicator.
    * But when the remote is awake (eg: channel indicator is lit), pressing the channel will +1 the channel.
-   * 
-   * TODO: adds more logic here, pressing CHANNEL consecutively will lose track of the internal counter. 
-   * Needs either to wake for the remote to be alseep again or keep track of time between channel press
+   * The remote will go to sleep after 5s, so if no command was sent in 5s, we wave to press one more time to wake the remote.
    */
-  SomfyPress(SomfyButton::CHANNEL);
+  elapsed = getElapsedTime();
+
+  Serial.print("Elapsed: ");
+  Serial.println(elapsed);
+
+  if (elapsed > 5500) {
+    Serial.println("WAKE---");
+    SomfyPress(SomfyButton::CHANNEL);
+    Serial.println("WAKE^^^");
+  }
 
   /**
   * Iterate until we reach the desired channel  
   */
   int index;
-  for (int i = 1; i < 5; i++) {
+  for (int i = 0; i <= 5; i++) {
     index = (i + currentChannel) % 5;
     SomfyPress(SomfyButton::CHANNEL);
-    if (index == channel) {
+    delay(100);
+    if (index == channel - 1) {
       break;
     }
   }
@@ -69,7 +92,7 @@ void SomfySelectChannel(int channel) {
 void SomfySaveCurrentChannel(int channel) {
   currentChannel = channel;
 
-  // TODO: save to eeprom
+  // TODO: save to eeprom/spiffs
 }
 
 void MQTTCallback(char *t, byte *payload, unsigned int lenght) {
@@ -100,6 +123,8 @@ void MQTTCallback(char *t, byte *payload, unsigned int lenght) {
 }
 
 void setup() {
+  startTime = millis();
+
   pinMode(SomfyButton::UP, OUTPUT);
   pinMode(SomfyButton::DOWN, OUTPUT);
   pinMode(SomfyButton::MY, OUTPUT);
@@ -119,6 +144,7 @@ void setup() {
   }
 
   Serial.println("Network: conected.");
+
   MQTTClient.setServer(mqtt_broker, 1883);
   MQTTClient.setCallback(MQTTCallback);
 
@@ -135,6 +161,9 @@ void setup() {
       delay(2000);
     }
   }
+
+  Serial.print("Current channel: ");
+  Serial.println(currentChannel);
 
   MQTTClient.subscribe(mqtt_topic);
 }
