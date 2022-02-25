@@ -24,12 +24,6 @@ enum SomfyButton {
 WiFiClient ESPClient;
 PubSubClient MQTTClient(ESPClient);
 
-#define CHANNEL_1 0
-#define CHANNEL_2 1
-#define CHANNEL_3 2
-#define CHANNEL_4 3
-#define CHANNEL_5 4
-
 /**
  * This assume the remote is on the first channel when powered-on
  * It can be a problematic since the remote memorize the last channel.
