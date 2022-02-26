@@ -70,4 +70,5 @@ somfy/channel/3/up
   - A: The Somfy "Conectivity Kit" is 69€ but is cloud based and I don't want that. The Tahoma Switch has a local API but is 199€. This cost less than 50€ if you buy the remote second hand or less if you already have one. 
 - Q: Will it work with Somfy RTS ? 
   - A: Yes, should work as well. However the RTS protocol is simpler that IO-Homecontrol and can be emulated with a 433Mhz transitter so you don't need to sacrifice a remote. Take a look at  https://github.com/Legion2/Somfy_Remote_Lib and https://github.com/etimou/SomfyRTS 
-
+- Q: This is nice but this won't give me feedback status return ? 
+  - A: True, this won't give you much than the remote. I'm using cheap zigbee door sensors on the roller blinds to know the status
